@@ -1,9 +1,9 @@
 import { metadata } from './layout.metadata';
-import ClientLayout from './client-layout';
+import RootLayout from './layout';
 
 export { metadata };
 
-export default function RootLayout({
+export default function Layout({
   children,
 }: {
   children: React.ReactNode;
@@ -11,7 +11,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClientLayout>{children}</ClientLayout>
+        <RootLayout>{children}</RootLayout>
       </body>
     </html>
   );
