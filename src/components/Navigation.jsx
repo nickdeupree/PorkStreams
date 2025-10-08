@@ -31,7 +31,8 @@ import {
   Refresh,
   Tv,
   VideoLibrary,
-  Language
+  Language,
+  History
 } from '@mui/icons-material';
 import { useAppContext } from '../context/AppContext';
 import { APP_CATEGORIES, PROVIDER_IDS } from '../config/categoryMappings';
@@ -46,7 +47,9 @@ const Navigation = () => {
     themeMode,
     toggleTheme,
     allowAllStreams,
-    toggleAllowAllStreams
+    toggleAllowAllStreams,
+    showEnded,
+    toggleShowEnded
   } = useAppContext();
 
   const theme = useTheme();
@@ -214,6 +217,26 @@ const Navigation = () => {
             </ListItem>
 
             <Divider />
+
+            {/* Show Ended Toggle */}
+            <ListItem
+              secondaryAction={
+                <Switch
+                  edge="end"
+                  onChange={toggleShowEnded}
+                  checked={showEnded}
+                  inputProps={{ 'aria-label': 'show ended toggle' }}
+                />
+              }
+            >
+              <ListItemIcon>
+                <History />
+              </ListItemIcon>
+              <ListItemText
+                primary="Show Ended"
+                secondary="Include events that already finished"
+              />
+            </ListItem>
 
             {/* Stream Filter Toggle */}
             <ListItem

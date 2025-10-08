@@ -154,7 +154,7 @@ export class StreamedProvider extends BaseProvider {
     }
   }
 
-  normalizeCategories(rawData, { allowAllStreams = false } = {}) {
+  normalizeCategories(rawData, { allowAllStreams = false, showEnded = false } = {}) {
     const normalized = {
       [APP_CATEGORIES.BASKETBALL]: [],
       [APP_CATEGORIES.WOMENS_BASKETBALL]: [],
@@ -239,7 +239,7 @@ export class StreamedProvider extends BaseProvider {
 
       const startsAt = typeof match.date === 'number' ? Math.floor(match.date / 1000) : null;
 
-      if (!isTimestampOnCurrentDay(startsAt)) {
+      if (!showEnded && !isTimestampOnCurrentDay(startsAt)) {
         return;
       }
 

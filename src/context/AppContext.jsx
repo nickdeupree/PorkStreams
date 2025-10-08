@@ -45,15 +45,22 @@ export const AppProvider = ({ children }) => {
       return {};
     }
 
+    const legacyShowTodayOnly =
+      typeof stored.showTodayOnly === 'boolean' ? stored.showTodayOnly : undefined;
+
     return {
       allowAllStreams: Boolean(stored.allowAllStreams),
-      showTodayOnly:
-        typeof stored.showTodayOnly === 'boolean' ? stored.showTodayOnly : undefined
+      showEnded:
+        typeof stored.showEnded === 'boolean'
+          ? stored.showEnded
+          : legacyShowTodayOnly === undefined
+            ? undefined
+            : !legacyShowTodayOnly
     };
   }, []);
 
   const [provider, setProviderState] = useState(
-    cachedSelection.provider || PROVIDER_IDS.SHARK_STREAMS
+    cachedSelection.provider || PROVIDER_IDS.PPTV
   );
   const [selectedCategory, setSelectedCategoryState] = useState(
     cachedSelection.category || APP_CATEGORIES.BASKETBALL
@@ -72,8 +79,8 @@ export const AppProvider = ({ children }) => {
   const [allowAllStreams, setAllowAllStreams] = useState(
     Boolean(cachedSettings.allowAllStreams)
   );
-  const [showTodayOnly, setShowTodayOnly] = useState(
-    cachedSettings.showTodayOnly === undefined ? true : cachedSettings.showTodayOnly
+  const [showEnded, setShowEnded] = useState(
+    cachedSettings.showEnded === undefined ? false : cachedSettings.showEnded
   );
   const [themeMode, setThemeMode] = useState(() => {
     const saved = localStorage.getItem('porkstreams_theme_mode');
@@ -83,8 +90,8 @@ export const AppProvider = ({ children }) => {
   const userCategorySelectedRef = useRef(Boolean(cachedSelection.category));
   const initialCategorySetRef = useRef(Boolean(cachedSelection.category));
   const previousProviderRef = useRef(provider);
-  const allowAllStreamsInitializedRef = useRef(false);
-  const allowAllStreamsProviderRef = useRef(provider);
+  const settingsInitializedRef = useRef(false);
+  const settingsProviderRef = useRef(provider);
 
   const updateSelectionCache = (nextProvider = provider, nextCategory = selectedCategory) => {
     setCache(UI_SELECTION_CACHE_KEY, {
@@ -96,6 +103,7 @@ export const AppProvider = ({ children }) => {
   const updateSettingsCache = (settings) => {
     setCache(UI_SETTINGS_CACHE_KEY, {
       allowAllStreams,
+      showEnded,
       ...settings
     });
   };
@@ -104,6 +112,14 @@ export const AppProvider = ({ children }) => {
     setAllowAllStreams((prev) => {
       const nextValue = !prev;
       updateSettingsCache({ allowAllStreams: nextValue });
+      return nextValue;
+    });
+  };
+
+  const toggleShowEnded = () => {
+    setShowEnded((prev) => {
+      const nextValue = !prev;
+      updateSettingsCache({ showEnded: nextValue });
       return nextValue;
     });
   };
@@ -170,6 +186,8 @@ export const AppProvider = ({ children }) => {
 
       const sanitized = { ...data };
       delete sanitized.__allowAllStreams;
+      delete sanitized.__showEnded;
+      delete sanitized.__showTodayOnly;
       return sanitized;
     };
 
@@ -183,7 +201,18 @@ export const AppProvider = ({ children }) => {
         cachedData = getCache(cacheKey);
 
         if (isStreamedProvider) {
-          const matchesFilter = cachedData?.__allowAllStreams === allowAllStreams;
+          const cachedShowEnded =
+            typeof cachedData?.__showEnded === 'boolean'
+              ? cachedData.__showEnded
+              : typeof cachedData?.__showTodayOnly === 'boolean'
+                ? !cachedData.__showTodayOnly
+                : undefined;
+          const matchesFilter =
+            cachedData?.__allowAllStreams === allowAllStreams &&
+            (typeof cachedShowEnded === 'boolean'
+              ? cachedShowEnded === showEnded
+              : !showEnded);
+
           if (!matchesFilter) {
             cachedData = null;
           }
@@ -207,14 +236,19 @@ export const AppProvider = ({ children }) => {
       console.log(`Raw data fetched from provider (${providerId}) for key=${cacheKey}:`, rawData);
 
       const normalizedData = providerInstance.normalizeCategories(rawData, {
-        allowAllStreams
+        allowAllStreams,
+        showEnded
       });
 
       console.log('Fetched and normalized data:', normalizedData);
 
       // Cache the normalized data
       const cachePayload = isStreamedProvider
-        ? { ...normalizedData, __allowAllStreams: allowAllStreams }
+        ? {
+            ...normalizedData,
+            __allowAllStreams: allowAllStreams,
+            __showEnded: showEnded
+          }
         : normalizedData;
 
       setCache(cacheKey, cachePayload);
@@ -229,7 +263,18 @@ export const AppProvider = ({ children }) => {
       const cacheKey = providerInstance.getCacheKey();
       const cachedData = getCache(cacheKey);
       const isStreamedProvider = providerId === PROVIDER_IDS.STREAMED;
-      const matchesFilter = !isStreamedProvider || cachedData?.__allowAllStreams === allowAllStreams;
+      const cachedShowEnded =
+        typeof cachedData?.__showEnded === 'boolean'
+          ? cachedData.__showEnded
+          : typeof cachedData?.__showTodayOnly === 'boolean'
+            ? !cachedData.__showTodayOnly
+            : undefined;
+      const matchesFilter =
+        !isStreamedProvider ||
+        (cachedData?.__allowAllStreams === allowAllStreams &&
+          (typeof cachedShowEnded === 'boolean'
+            ? cachedShowEnded === showEnded
+            : !showEnded));
 
       if (cachedData && matchesFilter) {
         const normalizedCachedData = isStreamedProvider
@@ -270,20 +315,20 @@ export const AppProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const providerChanged = allowAllStreamsProviderRef.current !== provider;
-    allowAllStreamsProviderRef.current = provider;
+    const providerChanged = settingsProviderRef.current !== provider;
+    settingsProviderRef.current = provider;
 
     if (providerChanged) {
       return;
     }
 
-    if (!allowAllStreamsInitializedRef.current) {
-      allowAllStreamsInitializedRef.current = true;
+    if (!settingsInitializedRef.current) {
+      settingsInitializedRef.current = true;
       return;
     }
 
     fetchStreamData(provider, { forceRefresh: true });
-  }, [allowAllStreams, provider]);
+  }, [allowAllStreams, showEnded, provider]);
 
   const value = {
     provider,
@@ -299,6 +344,8 @@ export const AppProvider = ({ children }) => {
     toggleTheme,
     allowAllStreams,
     toggleAllowAllStreams,
+    showEnded,
+    toggleShowEnded,
     // refreshData forces a network fetch and bypasses cache — useful after clearing cache
     refreshData: () => fetchStreamData(provider, { forceRefresh: true }),
     providers: Object.keys(providers)

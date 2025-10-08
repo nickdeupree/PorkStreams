@@ -33,7 +33,7 @@ export class DaddyStreamsProvider extends BaseProvider {
     return `https://dlhd.dad/embed/stream-${channelId}.php`;
   }
 
-  normalizeCategories(rawData) {
+  normalizeCategories(rawData, { showEnded = false } = {}) {
     const normalized = {
       [APP_CATEGORIES.BASKETBALL]: [],
       [APP_CATEGORIES.WOMENS_BASKETBALL]: [],
@@ -164,7 +164,7 @@ export class DaddyStreamsProvider extends BaseProvider {
               channels: normalizedChannels
             };
 
-            if (!isTimestampOnCurrentDay(stream.startsAt)) {
+            if (!showEnded && !isTimestampOnCurrentDay(stream.startsAt)) {
               return;
             }
 

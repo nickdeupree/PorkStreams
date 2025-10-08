@@ -10,7 +10,8 @@ const StreamGrid = () => {
     selectedCategory,
     loading,
     error,
-    setCurrentStream
+    setCurrentStream,
+    showEnded
   } = useAppContext();
 
   const handleStreamClick = (stream) => {
@@ -49,11 +50,18 @@ const StreamGrid = () => {
 
   const streams = streamData[selectedCategory] || [];
 
-  if (streams.length === 0) {
+  const streamsWithStatus = streams
+    .map((stream) => ({
+      stream,
+      statusInfo: getStreamStatus(stream)
+    }))
+    .filter(({ statusInfo }) => showEnded || statusInfo.statusCategory !== 'ended');
+
+  if (streamsWithStatus.length === 0) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="info">
-          No streams available in {selectedCategory} at this time. Check back later!
+          No streams available in {selectedCategory} at this time. Streams may be added up to an hour before they start, so check back soon.
         </Alert>
       </Box>
     );
@@ -65,11 +73,7 @@ const StreamGrid = () => {
     ended: 2
   };
 
-  const sortedStreams = streams
-    .map((stream) => ({
-      stream,
-      statusInfo: getStreamStatus(stream)
-    }))
+  const sortedStreams = streamsWithStatus
     .sort((a, b) => {
       const statusRankA = statusOrder[a.statusInfo.statusCategory] ?? Number.MAX_SAFE_INTEGER;
       const statusRankB = statusOrder[b.statusInfo.statusCategory] ?? Number.MAX_SAFE_INTEGER;

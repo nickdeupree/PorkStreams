@@ -46,7 +46,7 @@ export class PPTVProvider extends BaseProvider {
     return null;
   }
 
-  normalizeCategories(rawData) {
+  normalizeCategories(rawData, { showEnded = false } = {}) {
     const normalized = {
       [APP_CATEGORIES.BASKETBALL]: [],
       [APP_CATEGORIES.WOMENS_BASKETBALL]: [],
@@ -116,7 +116,11 @@ export class PPTVProvider extends BaseProvider {
             }
 
             // Allow always-live / 24/7 streams even if startsAt is falsy or not on current day
-            if (!normalizedStream.always_live && !isTimestampOnCurrentDay(normalizedStream.startsAt)) {
+            if (
+              !showEnded &&
+              !normalizedStream.always_live &&
+              !isTimestampOnCurrentDay(normalizedStream.startsAt)
+            ) {
               return;
             }
             normalized[appCategory].push(normalizedStream);

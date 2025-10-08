@@ -126,7 +126,7 @@ export class SharkStreamsProvider extends BaseProvider {
     }
   }
 
-  normalizeCategories(rawData) {
+  normalizeCategories(rawData, { showEnded = false } = {}) {
     const normalized = {
       [APP_CATEGORIES.BASKETBALL]: [],
       [APP_CATEGORIES.WOMENS_BASKETBALL]: [],
@@ -163,7 +163,7 @@ export class SharkStreamsProvider extends BaseProvider {
           embedUrl: event.embedUrl
         };
 
-        if (!isTimestampOnCurrentDay(stream.startsAt)) {
+        if (!showEnded && !isTimestampOnCurrentDay(stream.startsAt)) {
           return;
         }
 
