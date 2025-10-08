@@ -1,0 +1,22 @@
+/* App-specific styles */
+/* Most styling is handled by MUI components and theme */
+
+.stream-card-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.stream-card-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.stream-card-exit {
+  opacity: 1;
+}
+
+.stream-card-exit-active {
+  opacity: 0;
+  transition: opacity 200ms;
+}

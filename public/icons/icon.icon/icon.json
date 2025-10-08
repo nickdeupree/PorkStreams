@@ -1,0 +1,41 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:1.00000,0.78628,0.69149,1.00000",
+      "display-p3:1.00000,0.61269,0.36106,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "blur-material" : 1,
+      "layers" : [
+        {
+          "image-name" : "icon-transparent.png",
+          "name" : "icon-transparent",
+          "position" : {
+            "scale" : 0.9,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
