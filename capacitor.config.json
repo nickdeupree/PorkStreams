@@ -1,5 +1,5 @@
 {
   "appId": "com.nickdeupree.porkstreams",
   "appName": "PorkStreams",
-  "webDir": "www"
+  "webDir": "dist"
 }

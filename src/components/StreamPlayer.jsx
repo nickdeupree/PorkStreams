@@ -28,6 +28,26 @@ const StreamPlayer = () => {
   const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const iframeRef = React.useRef(null);
+  // Try to focus the iframe reliably once it's loaded. Some embeds or browsers
+  // may not allow immediate focus, so retry briefly using requestAnimationFrame
+  // and a short timeout.
+  const focusIframe = () => {
+    try {
+      const tryFocus = () => {
+        if (iframeRef.current && typeof iframeRef.current.focus === 'function') {
+          iframeRef.current.focus();
+        }
+      };
+
+      // Try on the next paint and again shortly after to increase reliability
+      requestAnimationFrame(() => {
+        tryFocus();
+        setTimeout(tryFocus, 50);
+      });
+    } catch (e) {
+      // ignore focus errors
+    }
+  };
   const [selectedChannelId, setSelectedChannelId] = useState(null);
   const [availableChannels, setAvailableChannels] = useState([]);
 
@@ -354,6 +374,7 @@ const StreamPlayer = () => {
               key={embedUrl}
               src={embedUrl}
               title={currentStream.name}
+              tabIndex={0}
               style={{
                 width: '100%',
                 height: '100%',
@@ -362,8 +383,10 @@ const StreamPlayer = () => {
               }}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              onLoad={() => setLoading(false)}
-              
+              onLoad={() => {
+                setLoading(false);
+                focusIframe();
+              }}
             />
 
             {/* Pause overlay */}
