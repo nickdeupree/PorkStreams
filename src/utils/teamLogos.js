@@ -181,6 +181,8 @@ const LOGO_CONFIG = {
     { file: 'stars.png', aliases: ['dallas stars', 'stars'] },
     { file: 'wild.png', aliases: ['minnesota wild', 'wild'] }
   ])
+  ,
+  [APP_CATEGORIES.SOCCER]: createLookup('soccer', 'soccer.png', [])
 };
 
 const hasMatchupSeparator = (name) => /\b(?:vs\.?|v\.?|at|@)\b/i.test(name);

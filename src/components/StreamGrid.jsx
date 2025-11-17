@@ -1,8 +1,10 @@
 import React from 'react';
 import { Grid, Alert, CircularProgress, Box, Typography } from '@mui/material';
 import { useAppContext } from '../context/AppContext';
+import { APP_CATEGORIES } from '../config/categoryMappings';
 import StreamCard from './StreamCard';
 import { getStreamStatus } from '../utils/streamStatus';
+import MovieCategoryView from './MovieCategoryView';
 
 const StreamGrid = () => {
   const {
@@ -17,6 +19,10 @@ const StreamGrid = () => {
   const handleStreamClick = (stream) => {
     setCurrentStream(stream);
   };
+
+  if (selectedCategory === APP_CATEGORIES.MOVIES) {
+    return <MovieCategoryView />;
+  }
 
   if (loading) {
     return (

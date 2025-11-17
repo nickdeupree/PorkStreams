@@ -20,6 +20,7 @@ import { PROVIDER_IDS } from '../config/categoryMappings';
 import { DaddyStreamsProvider } from '../providers/DaddyStreamsProvider';
 import { PPTVProvider } from '../providers/PPTVProvider';
 import { StreamedProvider } from '../providers/StreamedProvider';
+import { MOVIE_PROVIDER_ID, buildVidkingEmbedUrl } from '../services/movieService';
 
 const StreamPlayer = () => {
   const { currentStream, setCurrentStream, allowAllStreams } = useAppContext();
@@ -159,6 +160,8 @@ const StreamPlayer = () => {
             allowAllStreams
           });
           url = result?.embedUrl || null;
+        } else if (currentStream.provider === MOVIE_PROVIDER_ID) {
+          url = buildVidkingEmbedUrl(currentStream.movieMeta);
         }
 
         console.log('Resolved embed URL:', { url, stream: currentStream, channelId: selectedChannelId });

@@ -8,12 +8,15 @@ import {
   Box,
   FormControl,
   Select,
-  MenuItem
+  MenuItem,
+  IconButton,
+  Tooltip
 } from '@mui/material';
-import { AccessTime } from '@mui/icons-material';
+import { AccessTime, PlayArrow } from '@mui/icons-material';
 import { getStreamStatus } from '../utils/streamStatus';
+import { MOVIE_PROVIDER_ID } from '../services/movieService';
 
-const StreamCard = ({ stream, onClick }) => {
+const StreamCard = ({ stream, onClick, onPlay }) => {
   const [selectedChannelId, setSelectedChannelId] = useState(() => {
     const initial = stream.selectedChannelId || stream.channelId || stream.channels?.[0]?.channel_id;
     return initial ? initial.toString() : '';
@@ -63,18 +66,34 @@ const StreamCard = ({ stream, onClick }) => {
     setSelectedChannelId(event.target.value);
   };
 
-  const handleCardClick = () => {
-    if (!onClick) return;
-
+  const buildSelectedStream = () => {
     const channel = selectedChannel || stream.channels?.[0] || null;
 
-    onClick({
+    return {
       ...stream,
       channelId: channel?.channel_id || null,
       tag: channel?.channel_name || stream.tag,
       selectedChannelId: channel?.channel_id || null
-    });
+    };
   };
+
+  const handleCardClick = () => {
+    if (!onClick) return;
+
+    onClick(buildSelectedStream());
+  };
+
+  const handlePlayClick = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (!onPlay) {
+      return;
+    }
+    onPlay(buildSelectedStream());
+  };
+
+  const showPlayButton =
+    stream.provider === MOVIE_PROVIDER_ID && typeof onPlay === 'function' && stream.movieMeta;
 
   return (
     <Card
@@ -138,8 +157,31 @@ const StreamCard = ({ stream, onClick }) => {
         )
       )}
 
-      <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+      <CardContent sx={{ flexGrow: 1, pb: 1, position: 'relative' }}>
+        {showPlayButton && (
+          <Tooltip title="Play now">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={handlePlayClick}
+              sx={{
+                position: 'absolute',
+                bottom: 10,
+                right: 10,
+                backgroundColor: 'background.paper',
+                boxShadow: 2,
+                '&:hover': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText'
+                }
+              }}
+              aria-label="Play now"
+            >
+              <PlayArrow fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
             <Typography variant="h6" component="h3" sx={{ fontSize: '1rem', fontWeight: 600, lineHeight: 1.3 }}>
             {stream.name.includes(':') ? stream.name.split(':').slice(1).join(':').trim() : stream.name}
             </Typography>
@@ -162,7 +204,7 @@ const StreamCard = ({ stream, onClick }) => {
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        {/* <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {stream.channels && stream.channels.length > 1 ? (
             <FormControl
               size="small"
@@ -204,7 +246,7 @@ const StreamCard = ({ stream, onClick }) => {
               sx={{ fontSize: '0.75rem' }}
             />
           )}
-        </Box>
+        </Box> */}
       </CardContent>
     </Card>
   );

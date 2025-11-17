@@ -7,7 +7,6 @@ import getTheme from './theme/muiTheme';
 import Navigation from './components/Navigation';
 import StreamGrid from './components/StreamGrid';
 import StreamPlayer from './components/StreamPlayer';
-import { useKeyboardNav } from './hooks/useKeyboardNav';
 import { useRemoteControl } from './hooks/useRemoteControl';
 
 // Main content component that uses the context
@@ -15,8 +14,7 @@ const AppContent = () => {
   const { themeMode, currentStream } = useAppContext();
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
 
-  // Enable keyboard and remote control navigation
-  useKeyboardNav(!currentStream); // Disable when player is open
+  // Enable remote control navigation (keyboard navigation removed)
   useRemoteControl(!currentStream);
 
   return (

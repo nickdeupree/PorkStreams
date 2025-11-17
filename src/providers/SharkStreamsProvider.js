@@ -130,10 +130,12 @@ export class SharkStreamsProvider extends BaseProvider {
     const normalized = {
       [APP_CATEGORIES.BASKETBALL]: [],
       [APP_CATEGORIES.WOMENS_BASKETBALL]: [],
+      [APP_CATEGORIES.SOCCER]: [],
       [APP_CATEGORIES.FOOTBALL]: [],
       [APP_CATEGORIES.BASEBALL]: [],
       [APP_CATEGORIES.HOCKEY]: [],
-      [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: []
+      [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: [],
+      [APP_CATEGORIES.MOVIES]: []
     };
 
     try {

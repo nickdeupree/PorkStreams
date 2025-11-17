@@ -5,7 +5,7 @@ A cross-platform streaming application built with **Vite + React + Material-UI**
 ## Features
 
 - 🎯 **Multi-Provider Support**: Switch between Daddy Streams and PPTV
-- 🏀 **Three Sport Categories**: Basketball, Women's Basketball, and Football
+- 🏀 **Four Sport Categories**: Basketball, Women's Basketball, Football, and Soccer
 - 🎨 **Dark/Light Mode**: Toggle between themes optimized for TV viewing
 - 📱 **Responsive Design**: Works on mobile, desktop, and TV screens
 - ⌨️ **Keyboard Navigation**: Full arrow key support
@@ -74,6 +74,7 @@ npm run android
 - **Basketball**: Basketball, NBA
 - **Women's Basketball**: WNBA, Women's Basketball, Womens Basketball
 - **Football**: American Football, American Football (NFL), NFL
+- **Soccer**: Football, Soccer
 
 ## API Endpoints
 
