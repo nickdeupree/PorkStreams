@@ -16,12 +16,15 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Stack,
   Typography
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { fetchTvSeasonEpisodes, fetchTvSeriesDetails } from '../services/movieService';
+import { getTvProgress, clearTvProgress, getLastWatchedEpisode } from '../services/watchProgressService';
 
 const sortSeasons = (seasons = []) => [...seasons].sort((a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0));
 
@@ -49,10 +52,22 @@ const TvShowDetailView = ({ stream, onBack, onEpisodeSelect }) => {
   const [detailsError, setDetailsError] = useState(null);
   const [episodesError, setEpisodesError] = useState(null);
   const [seasonDetailsOpen, setSeasonDetailsOpen] = useState(false);
+  const [savedProgress, setSavedProgress] = useState(null);
 
   const showTitle = stream?.name || stream?.movieMeta?.title || 'TV Show';
   const scrollPositionRef = useRef(0);
   const pendingScrollRestoreRef = useRef(false);
+
+  // Load saved progress when stream changes
+  useEffect(() => {
+    if (!stream?.movieMeta?.tmdbId) {
+      setSavedProgress(null);
+      return;
+    }
+
+    const lastEpisode = getLastWatchedEpisode(stream.movieMeta.tmdbId);
+    setSavedProgress(lastEpisode);
+  }, [stream?.movieMeta?.tmdbId]);
 
   useEffect(() => {
     if (!stream) {
@@ -67,7 +82,6 @@ const TvShowDetailView = ({ stream, onBack, onEpisodeSelect }) => {
     setDetailsError(null);
     setSeriesDetails(null);
     setSeasonEpisodes({});
-    setSelectedSeason('');
     setEpisodesError(null);
 
     const loadDetails = async () => {
@@ -77,13 +91,19 @@ const TvShowDetailView = ({ stream, onBack, onEpisodeSelect }) => {
           return;
         }
         setSeriesDetails(details);
+        const lastEpisode = getLastWatchedEpisode(stream.movieMeta.tmdbId);
+        setSavedProgress(lastEpisode);
         const sortedSeasons = sortSeasons(details.seasons);
         const preferredSeason =
           sortedSeasons.find((season) => season.episodeCount > 0)?.seasonNumber ??
           sortedSeasons[0]?.seasonNumber;
-        setSelectedSeason(
-          preferredSeason !== undefined && preferredSeason !== null ? preferredSeason.toString() : ''
-        );
+        let initialSeason = '';
+        if (lastEpisode?.season && sortedSeasons.some((s) => s.seasonNumber === lastEpisode.season)) {
+          initialSeason = lastEpisode.season.toString();
+        } else if (preferredSeason !== undefined && preferredSeason !== null) {
+          initialSeason = preferredSeason.toString();
+        }
+        setSelectedSeason(initialSeason);
       } catch (err) {
         if (!isMounted) {
           return;
@@ -156,6 +176,23 @@ const TvShowDetailView = ({ stream, onBack, onEpisodeSelect }) => {
   );
   const episodes = seasonEpisodes[selectedSeason] || [];
 
+  // Reload saved progress when player closes
+  useEffect(() => {
+    const handlePlayerClosed = () => {
+      if (stream?.movieMeta?.tmdbId) {
+        const lastEpisode = getLastWatchedEpisode(stream.movieMeta.tmdbId);
+        setSavedProgress(lastEpisode);
+        // Update selected season if saved progress indicates a different season
+        if (lastEpisode?.season && sortedSeasons.some((s) => s.seasonNumber === lastEpisode.season)) {
+          setSelectedSeason(lastEpisode.season.toString());
+        }
+      }
+    };
+
+    document.addEventListener('streamPlayerClosed', handlePlayerClosed);
+    return () => document.removeEventListener('streamPlayerClosed', handlePlayerClosed);
+  }, [stream?.movieMeta?.tmdbId]);
+
   const handleSeasonChange = (event) => {
     const seasonNumber = event.target.value;
     if (typeof window !== 'undefined') {
@@ -198,6 +235,48 @@ const TvShowDetailView = ({ stream, onBack, onEpisodeSelect }) => {
     onEpisodeSelect?.(updatedStream);
   };
 
+  const handlePlayClick = () => {
+    // Resume from saved progress if available
+    if (!savedProgress || !stream?.movieMeta?.tmdbId) {
+      return;
+    }
+
+    const updatedStream = {
+      ...stream,
+      movieMeta: {
+        ...stream.movieMeta,
+        seasonNumber: savedProgress.season,
+        episodeNumber: savedProgress.episode,
+        episodeTitle: `Season ${savedProgress.season} Episode ${savedProgress.episode}`
+      },
+      savedProgress
+    };
+
+    onEpisodeSelect?.(updatedStream);
+  };
+
+  const handlePlayFromBeginning = () => {
+    // Clear all TV progress and start from season 1 episode 1
+    if (stream?.movieMeta?.tmdbId) {
+      clearTvProgress(stream.movieMeta.tmdbId);
+    }
+
+    // Set to first episode of first season
+    const firstSeason = sortedSeasons[0]?.seasonNumber ?? 1;
+    const updatedStream = {
+      ...stream,
+      movieMeta: {
+        ...stream.movieMeta,
+        seasonNumber: firstSeason,
+        episodeNumber: 1,
+        episodeTitle: 'Season 1 Episode 1'
+      },
+      savedProgress: null
+    };
+
+    onEpisodeSelect?.(updatedStream);
+  };
+
   const toggleSeasonDetails = () => setSeasonDetailsOpen((open) => !open);
 
   return (
@@ -216,9 +295,6 @@ const TvShowDetailView = ({ stream, onBack, onEpisodeSelect }) => {
         <Button onClick={onBack} startIcon={<ArrowBackIcon />}>
           Back to search
         </Button>
-        <Typography variant="body2" color="text.secondary">
-          Powered by TMDB
-        </Typography>
       </Box>
 
       {loadingDetails ? (
@@ -271,9 +347,27 @@ const TvShowDetailView = ({ stream, onBack, onEpisodeSelect }) => {
                   {seriesDetails.overview}
                 </Typography>
               )}
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Select a season to explore every episode. Click an episode card to start playing it immediately.
-              </Typography>
+              
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                {savedProgress && (
+                  <Button
+                    variant="contained"
+                    size="medium"
+                    startIcon={<PlayArrowIcon />}
+                    onClick={handlePlayClick}
+                  >
+                    Resume (S{savedProgress.season}E{savedProgress.episode})
+                  </Button>
+                )}
+                <Button
+                  variant={savedProgress ? 'outlined' : 'contained'}
+                  size="medium"
+                  startIcon={savedProgress ? <RestartAltIcon /> : <PlayArrowIcon />}
+                  onClick={handlePlayFromBeginning}
+                >
+                  {savedProgress ? 'Start from beginning' : 'Start watching'}
+                </Button>
+              </Stack>
             </Box>
           </Box>
 

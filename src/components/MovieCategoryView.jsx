@@ -13,8 +13,8 @@ import { Clear, Search } from '@mui/icons-material';
 import StreamCard from './StreamCard';
 import { useAppContext } from '../context/AppContext';
 import { fetchTrendingTitles, searchMoviesAndShows } from '../services/movieService';
-import TvShowDetailView from './TvShowDetailView';
 import MovieDetailView from './MovieDetailView';
+import ContinueWatching from './ContinueWatching';
 
 const MovieCategoryView = () => {
   const { setCurrentStream } = useAppContext();
@@ -24,8 +24,7 @@ const MovieCategoryView = () => {
   const [error, setError] = useState(null);
   const [lastQuery, setLastQuery] = useState('');
   const [mode, setMode] = useState('trending');
-  const [selectedTvStream, setSelectedTvStream] = useState(null);
-  const [selectedMovieStream, setSelectedMovieStream] = useState(null);
+  const [selectedStream, setSelectedStream] = useState(null);
 
   const loadTitles = useCallback(
     async (term = '') => {
@@ -80,14 +79,8 @@ const MovieCategoryView = () => {
 
   const handleStreamSelect = useCallback(
     (stream) => {
-      if (stream?.movieMeta?.mediaType === 'tv') {
-        setSelectedMovieStream(null);
-        setSelectedTvStream(stream);
-        return;
-      }
-      if (stream?.movieMeta?.mediaType === 'movie') {
-        setSelectedTvStream(null);
-        setSelectedMovieStream(stream);
+      if (stream?.movieMeta?.mediaType === 'tv' || stream?.movieMeta?.mediaType === 'movie') {
+        setSelectedStream(stream);
         return;
       }
       setCurrentStream(stream);
@@ -100,55 +93,33 @@ const MovieCategoryView = () => {
       if (!stream) {
         return;
       }
-      if (stream?.movieMeta?.mediaType === 'tv') {
-        const updatedStream = {
-          ...stream,
-          movieMeta: {
-            ...stream.movieMeta,
-            seasonNumber: stream.movieMeta?.seasonNumber || 1,
-            episodeNumber: stream.movieMeta?.episodeNumber || 1
-          }
-        };
-        setCurrentStream(updatedStream);
-        return;
-      }
       setCurrentStream(stream);
     },
     [setCurrentStream]
   );
 
   const handleBackToSearch = useCallback(() => {
-    setSelectedTvStream(null);
-    setSelectedMovieStream(null);
+    setSelectedStream(null);
   }, []);
 
-  const handleEpisodeSelection = useCallback(
+  const handleStreamAction = useCallback(
     (updatedStream) => {
       if (!updatedStream) {
         return;
       }
-      setSelectedTvStream(updatedStream);
+      setSelectedStream(updatedStream);
       setCurrentStream(updatedStream);
     },
     [setCurrentStream]
   );
 
-  if (selectedTvStream) {
-    return (
-      <TvShowDetailView
-        stream={selectedTvStream}
-        onBack={handleBackToSearch}
-        onEpisodeSelect={handleEpisodeSelection}
-      />
-    );
-  }
-
-  if (selectedMovieStream) {
+  if (selectedStream) {
     return (
       <MovieDetailView
-        stream={selectedMovieStream}
+        stream={selectedStream}
         onBack={handleBackToSearch}
         onPlay={handlePlayRequest}
+        onEpisodeSelect={handleStreamAction}
       />
     );
   }
@@ -204,6 +175,8 @@ const MovieCategoryView = () => {
           {error}
         </Alert>
       )}
+
+      <ContinueWatching onPlay={handlePlayRequest} />
 
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
