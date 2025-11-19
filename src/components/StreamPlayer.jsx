@@ -21,6 +21,7 @@ import { DaddyStreamsProvider } from '../providers/DaddyStreamsProvider';
 import { PPTVProvider } from '../providers/PPTVProvider';
 import { StreamedProvider } from '../providers/StreamedProvider';
 import { MOVIE_PROVIDER_ID, buildVidkingEmbedUrl } from '../services/movieService';
+import { saveMovieProgress, saveTvProgress } from '../services/watchProgressService';
 
 const StreamPlayer = () => {
   const { currentStream, setCurrentStream, allowAllStreams } = useAppContext();
@@ -49,8 +50,60 @@ const StreamPlayer = () => {
       // ignore focus errors
     }
   };
+
+  // Handle watch progress events from Vidking player
+  const handlePlayerMessage = (event) => {
+    try {
+      let data = event.data;
+      
+      // Parse if it's a string
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          // Not JSON, ignore
+          return;
+        }
+      }
+
+      // Look for PLAYER_EVENT type or just data with event field
+      const eventData = data.data || data;
+      if (!eventData || !eventData.event) {
+        return;
+      }
+
+      // Handle timeupdate, play, pause, ended, seeked events
+      const { event: eventType, currentTime, duration, id, mediaType, season, episode } = eventData;
+      
+      if (!currentStream || !id) {
+        return;
+      }
+
+      // Only track time-based events (timeupdate, pause, seeked)
+      if (['timeupdate', 'pause', 'seeked'].includes(eventType) && currentTime !== undefined && duration !== undefined) {
+        if (mediaType === 'movie' || currentStream.movieMeta?.mediaType === 'movie') {
+          saveMovieProgress(id, currentTime, duration);
+        } else if (mediaType === 'tv' || currentStream.movieMeta?.mediaType === 'tv') {
+          if (season !== undefined && episode !== undefined) {
+            saveTvProgress(id, season, episode, currentTime, duration);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error handling player message:', err);
+    }
+  };
+
   const [selectedChannelId, setSelectedChannelId] = useState(null);
   const [availableChannels, setAvailableChannels] = useState([]);
+
+  // Add listener for player progress messages
+  useEffect(() => {
+    window.addEventListener('message', handlePlayerMessage);
+    return () => {
+      window.removeEventListener('message', handlePlayerMessage);
+    };
+  }, [currentStream]);
 
   // useEffect(() => {
   //   if (!currentStream) return;
@@ -161,7 +214,7 @@ const StreamPlayer = () => {
           });
           url = result?.embedUrl || null;
         } else if (currentStream.provider === MOVIE_PROVIDER_ID) {
-          url = buildVidkingEmbedUrl(currentStream.movieMeta);
+          url = buildVidkingEmbedUrl(currentStream.movieMeta, currentStream.savedProgress);
         }
 
         console.log('Resolved embed URL:', { url, stream: currentStream, channelId: selectedChannelId });
@@ -205,6 +258,8 @@ const StreamPlayer = () => {
     setCurrentStream(null);
     setSelectedChannelId(null);
     setAvailableChannels([]);
+    // Dispatch event to notify other components that player closed
+    document.dispatchEvent(new CustomEvent('streamPlayerClosed'));
   };
 
   const handleChannelChange = (event) => {

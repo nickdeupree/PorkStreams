@@ -15,6 +15,7 @@ import {
 import { AccessTime, PlayArrow } from '@mui/icons-material';
 import { getStreamStatus } from '../utils/streamStatus';
 import { MOVIE_PROVIDER_ID } from '../services/movieService';
+import { getMovieProgress, getTvProgress, getLastWatchedEpisode } from '../services/watchProgressService';
 
 const StreamCard = ({ stream, onClick, onPlay }) => {
   const [selectedChannelId, setSelectedChannelId] = useState(() => {
@@ -22,9 +23,28 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
     return initial ? initial.toString() : '';
   });
 
+  const [savedProgress, setSavedProgress] = useState(null);
+
   useEffect(() => {
     const initial = stream.selectedChannelId || stream.channelId || stream.channels?.[0]?.channel_id;
     setSelectedChannelId(initial ? initial.toString() : '');
+  }, [stream]);
+
+  // Load saved progress on mount or when stream changes
+  useEffect(() => {
+    if (!stream?.movieMeta?.tmdbId) {
+      setSavedProgress(null);
+      return;
+    }
+
+    let progress = null;
+    if (stream.movieMeta.mediaType === 'movie') {
+      progress = getMovieProgress(stream.movieMeta.tmdbId);
+    } else if (stream.movieMeta.mediaType === 'tv') {
+      progress = getLastWatchedEpisode(stream.movieMeta.tmdbId);
+    }
+
+    setSavedProgress(progress);
   }, [stream]);
 
   const selectedChannel = useMemo(() => {
@@ -89,7 +109,14 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
     if (!onPlay) {
       return;
     }
-    onPlay(buildSelectedStream());
+    const selectedStream = buildSelectedStream();
+    
+    // Attach saved progress info if available
+    if (savedProgress) {
+      selectedStream.savedProgress = savedProgress;
+    }
+    
+    onPlay(selectedStream);
   };
 
   const showPlayButton =
@@ -103,7 +130,8 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
         width: 345,
         display: 'flex',
         flexDirection: 'column',
-        position: 'relative'
+        position: 'relative',
+        overflow: 'hidden'
       }}
       tabIndex={0}
       role="button"
@@ -112,15 +140,17 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
       {showTeamBranding ? (
         <Box
           sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: teamLogos.length > 1 ? 'space-between' : 'center',
             gap: 2,
             px: 2,
-            pt: 2,
-            pb: 1,
-            backgroundColor: 'action.hover',
-            minHeight: 140
+            backgroundColor: 'action.hover'
           }}
         >
           {teamLogos.map((logo, index) => (
@@ -130,10 +160,9 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
               src={logo}
               alt={teamNames[index] || stream.name}
               sx={{
-                height: 90,
-                width: 'auto',
-                maxWidth: teamLogos.length > 1 ? '45%' : '70%',
-                objectFit: 'contain',
+                height: '100%',
+                width: teamLogos.length > 1 ? '50%' : '100%',
+                objectFit: 'cover',
                 pointerEvents: 'none'
               }}
             />
@@ -143,10 +172,14 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
         stream.poster && (
           <CardMedia
             component="img"
-            height="180"
             image={stream.poster}
             alt={stream.name}
             sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
               objectFit: 'cover',
               backgroundColor: 'action.hover'
             }}
@@ -157,7 +190,20 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
         )
       )}
 
-      <CardContent sx={{ flexGrow: 1, pb: 1, position: 'relative' }}>
+      <CardContent sx={{ 
+        flexGrow: 1, 
+        pb: 1, 
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end'
+      }}>
         {showPlayButton && (
           <Tooltip title="Play now">
             <IconButton
@@ -182,71 +228,27 @@ const StreamCard = ({ stream, onClick, onPlay }) => {
           </Tooltip>
         )}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-            <Typography variant="h6" component="h3" sx={{ fontSize: '1rem', fontWeight: 600, lineHeight: 1.3 }}>
+            <Typography variant="h6" component="h3" sx={{ fontSize: '1rem', fontWeight: 600, lineHeight: 1.3, color: 'white' }}>
             {stream.name.includes(':') ? stream.name.split(':').slice(1).join(':').trim() : stream.name}
             </Typography>
-            <Chip
+            {!showPlayButton ? (<Chip
             label={statusLabel}
             color={statusColor}
             size="small"  
             sx={{ ml: 1, flexShrink: 0 }}
-            />
+            />) : null}
         </Box>
 
         {!stream.hideSchedule && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-            <AccessTime sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-            <Typography variant="body2" color="text.secondary">
+            <AccessTime sx={{ fontSize: '1rem', color: 'white' }} />
+            <Typography variant="body2" sx={{ color: 'white' }}>
               {startDate
                 ? `${formatDate(startDate)} • ${formatTime(startDate)}`
                 : 'Schedule TBA'}
             </Typography>
           </Box>
         )}
-
-        {/* <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {stream.channels && stream.channels.length > 1 ? (
-            <FormControl
-              size="small"
-              sx={{ minWidth: 140 }}
-              onClick={(event) => event.stopPropagation()}
-              onMouseDown={(event) => event.stopPropagation()}
-              onTouchStart={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              <Select
-                value={selectedChannelId}
-                displayEmpty
-                onChange={handleChannelChange}
-                renderValue={(value) => {
-                  if (!value) {
-                    return 'Select channel';
-                  }
-
-                  const channel = stream.channels.find(
-                    (item) => item.channel_id?.toString() === value
-                  );
-
-                  return channel?.channel_name || 'Select channel';
-                }}
-                sx={{ fontSize: '0.8rem' }}
-              >
-                {stream.channels.map((channel) => (
-                  <MenuItem key={channel.channel_id} value={channel.channel_id?.toString()}>
-                    {channel.channel_name || `Channel ${channel.channel_id}`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          ) : (
-            <Chip
-              label={selectedChannel?.channel_name || stream.tag}
-              size="small"
-              variant="outlined"
-              sx={{ fontSize: '0.75rem' }}
-            />
-          )}
-        </Box> */}
       </CardContent>
     </Card>
   );

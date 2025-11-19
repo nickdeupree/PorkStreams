@@ -110,7 +110,7 @@ export const fetchTrendingTitles = async () => {
     .filter(Boolean);
 };
 
-export const buildVidkingEmbedUrl = (movieMeta = {}) => {
+export const buildVidkingEmbedUrl = (movieMeta = {}, progress = null) => {
   if (!movieMeta.tmdbId) {
     return null;
   }
@@ -124,8 +124,14 @@ export const buildVidkingEmbedUrl = (movieMeta = {}) => {
 
   const baseUrl = segments.join('/');
   const featureParams = 'autoPlay=true&nextEpisode=true&episodeSelector=true';
+  
+  // Add progress parameter if available (for resuming from saved position)
+  let progressParam = '';
+  if (progress && progress.currentTime > 0) {
+    progressParam = `&progress=${Math.round(progress.currentTime)}`;
+  }
 
-  return `${baseUrl}?${featureParams}`;
+  return `${baseUrl}?${featureParams}${progressParam}`;
 };
 
 export const fetchMovieDetails = async (movieId) => {
@@ -170,6 +176,14 @@ export const fetchTvSeriesDetails = async (seriesId) => {
     poster: buildImageUrl(data.poster_path, 'w500'),
     backdrop: buildImageUrl(data.backdrop_path, 'w780'),
     overview: data.overview,
+    firstAirDate: data.first_air_date,
+    genres: Array.isArray(data.genres) ? data.genres.map((genre) => genre.name) : [],
+    voteAverage: typeof data.vote_average === 'number' ? Number(data.vote_average.toFixed(1)) : null,
+    status: data.status,
+    spokenLanguages: Array.isArray(data.spoken_languages)
+      ? data.spoken_languages.map((lang) => lang.english_name || lang.name)
+      : [],
+    homepage: data.homepage,
     seasons: Array.isArray(data.seasons)
       ? data.seasons
           .filter((season) => {
