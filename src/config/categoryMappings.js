@@ -5,13 +5,13 @@
 
 export const APP_CATEGORIES = {
   BASKETBALL: 'Basketball',
-  WOMENS_BASKETBALL: "Women's Basketball",
+  WOMENS_BASKETBALL: "WNBA",
   SOCCER: 'Soccer',
   FOOTBALL: 'Football',
   BASEBALL: 'Baseball',
   HOCKEY: 'Hockey',
   FIGHTING: 'Fighting',
-  TWENTY_FOUR_SEVEN: '24/7 Streams',
+  TWENTY_FOUR_SEVEN: '24/7',
   MOVIES: 'Movies & TV'
 };
 
