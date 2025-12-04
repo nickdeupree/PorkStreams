@@ -79,6 +79,7 @@ const MovieCategoryView = () => {
 
   const handleStreamSelect = useCallback(
     (stream) => {
+      console.log('Selected stream:', stream);
       if (stream?.movieMeta?.mediaType === 'tv' || stream?.movieMeta?.mediaType === 'movie') {
         setSelectedStream(stream);
         return;

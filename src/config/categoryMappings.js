@@ -5,14 +5,16 @@
 
 export const APP_CATEGORIES = {
   BASKETBALL: 'Basketball',
-  WOMENS_BASKETBALL: "WNBA",
-  SOCCER: 'Soccer',
   FOOTBALL: 'Football',
+  SOCCER: 'Soccer',
+  FIGHTING: 'Fighting',
+  MOTORSPORTS: 'Motorsports',
   BASEBALL: 'Baseball',
   HOCKEY: 'Hockey',
-  FIGHTING: 'Fighting',
+  TENNIS: 'Tennis',
+  WOMENS_BASKETBALL: "WNBA",
   TWENTY_FOUR_SEVEN: '24/7',
-  MOVIES: 'Movies & TV'
+  MOVIES: 'Movies & TV',
 };
 
 export const CATEGORY_MAPPINGS = {
@@ -31,8 +33,10 @@ export const CATEGORY_MAPPINGS = {
     [APP_CATEGORIES.SOCCER]: ['Football', 'Soccer'],
     [APP_CATEGORIES.BASEBALL]: ['Baseball'],
     [APP_CATEGORIES.HOCKEY]: ['Ice Hockey'],
+    [APP_CATEGORIES.MOTORSPORTS]: ['Motorsports'],
     [APP_CATEGORIES.FIGHTING]: ['Wrestling', 'UFC', 'Boxing', 'MMA'],
-    [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: ['24/7 Streams', '24/7', '247', 'Always Live']
+    [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: ['24/7 Streams', '24/7', '247', 'Always Live'],
+    [APP_CATEGORIES.TENNIS]: ['Tennis']
   },
   sharkstreams: {
     [APP_CATEGORIES.BASKETBALL]: ['NBA'],
@@ -41,7 +45,9 @@ export const CATEGORY_MAPPINGS = {
     [APP_CATEGORIES.SOCCER]: ['Soccer', 'Football'],
     [APP_CATEGORIES.BASEBALL]: ['MLB'],
     [APP_CATEGORIES.HOCKEY]: ['NHL'],
-    [APP_CATEGORIES.FIGHTING]: ['MMA', 'WWE', 'UFC', 'Boxing']
+    [APP_CATEGORIES.MOTORSPORTS]: ['MotorSports'],
+    [APP_CATEGORIES.FIGHTING]: ['MMA', 'WWE', 'UFC', 'Boxing'],
+    [APP_CATEGORIES.TENNIS]: ['Tennis']
   },
   streamed: {
     [APP_CATEGORIES.BASKETBALL]: ['basketball'],

@@ -134,6 +134,9 @@ export class SharkStreamsProvider extends BaseProvider {
       [APP_CATEGORIES.FOOTBALL]: [],
       [APP_CATEGORIES.BASEBALL]: [],
       [APP_CATEGORIES.HOCKEY]: [],
+      [APP_CATEGORIES.MOTORSPORTS]: [],
+      [APP_CATEGORIES.FIGHTING]: [],
+      [APP_CATEGORIES.TENNIS]: [],
       [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: [],
       [APP_CATEGORIES.MOVIES]: []
     };

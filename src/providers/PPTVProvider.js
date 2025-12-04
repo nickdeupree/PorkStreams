@@ -17,7 +17,7 @@ export class PPTVProvider extends BaseProvider {
     // Use proxy in development, direct URL in production
     this.apiUrl = import.meta.env.DEV
       ? '/api/pptv/streams'
-      : 'https://ppv.to/api/streams';
+      : 'https://old.ppv.to/api/streams';
   }
 
   async fetchSchedule() {
@@ -39,7 +39,7 @@ export class PPTVProvider extends BaseProvider {
     
     if (stream.uri_name) {
       // Construct URL from uri_name if needed
-      return `https://ppv.to/stream/${stream.uri_name}`;
+      return `https://old.ppv.to/stream/${stream.uri_name}`;
     }
 
     console.warn('No embed URL available for stream:', stream);
@@ -54,6 +54,9 @@ export class PPTVProvider extends BaseProvider {
       [APP_CATEGORIES.FOOTBALL]: [],
       [APP_CATEGORIES.BASEBALL]: [],
       [APP_CATEGORIES.HOCKEY]: [],
+      [APP_CATEGORIES.MOTORSPORTS]: [],
+      [APP_CATEGORIES.FIGHTING]: [],
+      [APP_CATEGORIES.TENNIS]: [],
       [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: [],
       [APP_CATEGORIES.MOVIES]: []
     };
