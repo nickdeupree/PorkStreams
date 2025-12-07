@@ -2,7 +2,6 @@ import { BaseProvider } from './BaseProvider';
 import { CATEGORY_MAPPINGS, APP_CATEGORIES } from '../config/categoryMappings';
 import { fetchJsonWithProxy } from '../utils/corsProxy';
 import { isTimestampOnCurrentDay } from '../utils/dateUtils';
-import { isGSWGame, getGSWLocalEmbedUrl } from '../utils/gswLocalStream';
 
 const EXCLUDED_24_7_STREAM_NAMES = new Set([
   '24/7 cows',
@@ -10,37 +9,30 @@ const EXCLUDED_24_7_STREAM_NAMES = new Set([
 ]);
 
 /**
- * PPTV Provider Implementation
+ * PPTV Legacy Provider Implementation (old.ppv.to)
  */
-export class PPTVProvider extends BaseProvider {
+export class PPTVLegacyProvider extends BaseProvider {
   constructor() {
-    super('pptv');
+    super('pptvlegacy');
     // Use proxy in development, direct URL in production
     this.apiUrl = import.meta.env.DEV
-      ? '/api/pptv/streams'
-      : 'https://api.ppvs.su/api/streams';
+      ? '/api/pptvlegacy/streams'
+      : 'https://old.ppv.to/api/streams';
   }
 
   async fetchSchedule() {
     try {
       // Try Vite proxy first (in dev), then CORS proxies
-      console.log('Fetching PPTV data from:', this.apiUrl);
+      console.log('Fetching PPTV Legacy data from:', this.apiUrl);
       const data = await fetchJsonWithProxy(this.apiUrl);
       return data;
     } catch (error) {
-      console.error('Error fetching PPTV schedule:', error);
+      console.error('Error fetching PPTV Legacy schedule:', error);
       throw error;
     }
   }
 
-  getEmbedUrl(stream, selectedSource = 'provider') {
-    // Check if this is a GSW basketball game
-    const isGSW = stream.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream.name);
-    
-    if (isGSW && selectedSource === 'gsw-local') {
-      return getGSWLocalEmbedUrl();
-    }
-    
+  getEmbedUrl(stream) {
     // Use iframe field if present, otherwise construct from uri_name
     if (stream.iframe) {
       return stream.iframe;
@@ -48,21 +40,11 @@ export class PPTVProvider extends BaseProvider {
     
     if (stream.uri_name) {
       // Construct URL from uri_name if needed
-      return `https://api.ppvs.su/api/streams/${stream.uri_name}`;
+      return `https://old.ppv.to/api/streams/${stream.uri_name}`;
     }
 
     console.warn('No embed URL available for stream:', stream);
     return null;
-  }
-
-  getAvailableSources(stream) {
-    const isGSW = stream.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream.name);
-    
-    if (isGSW) {
-      return ['provider', 'gsw-local'];
-    }
-    
-    return ['provider'];
   }
 
   normalizeCategories(rawData, { showEnded = false } = {}) {
@@ -85,7 +67,7 @@ export class PPTVProvider extends BaseProvider {
         return normalized;
       }
 
-      const mappings = CATEGORY_MAPPINGS.pptv;
+      const mappings = CATEGORY_MAPPINGS.pptvlegacy;
 
       const parseTimestamp = (value) => {
         if (!value) {
@@ -115,21 +97,19 @@ export class PPTVProvider extends BaseProvider {
 
         if (appCategory && Array.isArray(categoryObj.streams)) {
           categoryObj.streams.forEach((stream) => {
-            const streamName = stream.name || 'Unknown Event';
             const normalizedStream = {
               id: stream.id,
-              name: streamName,
-              tag: stream.tag || 'PPTV',
+              name: stream.name || 'Unknown Event',
+              tag: stream.tag || 'PPTV Legacy',
               poster: stream.poster || '',
               startsAt: parseTimestamp(stream.starts_at),
               endsAt: parseTimestamp(stream.ends_at),
               category: appCategory,
-              provider: 'pptv',
+              provider: 'pptvlegacy',
               iframe: stream.iframe,
               uri_name: stream.uri_name,
               always_live: stream.always_live === 1,
               allowpaststreams: stream.allowpaststreams === 1,
-              isGSWStream: appCategory === APP_CATEGORIES.BASKETBALL && isGSWGame(streamName),
               rawStream: stream // Keep raw data for embed URL construction
             };
 
@@ -156,7 +136,7 @@ export class PPTVProvider extends BaseProvider {
 
       return normalized;
     } catch (error) {
-      console.error('Error normalizing PPTV data:', error);
+      console.error('Error normalizing PPTV Legacy data:', error);
       return normalized;
     }
   }

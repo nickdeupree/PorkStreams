@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { DaddyStreamsProvider } from '../providers/DaddyStreamsProvider';
 import { PPTVProvider } from '../providers/PPTVProvider';
+import { PPTVLegacyProvider } from '../providers/PPTVLegacyProvider';
 import { SharkStreamsProvider } from '../providers/SharkStreamsProvider';
 import { StreamedProvider } from '../providers/StreamedProvider';
 import { getCache, setCache } from '../services/cacheService';
@@ -72,6 +73,9 @@ export const AppProvider = ({ children }) => {
     [APP_CATEGORIES.FOOTBALL]: [],
     [APP_CATEGORIES.BASEBALL]: [],
     [APP_CATEGORIES.HOCKEY]: [],
+    [APP_CATEGORIES.MOTORSPORTS]: [],
+    [APP_CATEGORIES.FIGHTING]: [],
+    [APP_CATEGORIES.TENNIS]: [],
     [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: [],
     [APP_CATEGORIES.MOVIES]: []
   });
@@ -167,6 +171,7 @@ export const AppProvider = ({ children }) => {
   const providers = {
     [PROVIDER_IDS.DADDY_STREAMS]: new DaddyStreamsProvider(),
     [PROVIDER_IDS.PPTV]: new PPTVProvider(),
+    [PROVIDER_IDS.PPTV_LEGACY]: new PPTVLegacyProvider(),
     [PROVIDER_IDS.SHARK_STREAMS]: new SharkStreamsProvider(),
     [PROVIDER_IDS.STREAMED]: new StreamedProvider()
   };
@@ -237,7 +242,7 @@ export const AppProvider = ({ children }) => {
       // Log raw provider response for debugging
       console.log(`Raw data fetched from provider (${providerId}) for key=${cacheKey}:`, rawData);
 
-      const normalizedData = providerInstance.normalizeCategories(rawData, {
+      const normalizedData = await providerInstance.normalizeCategories(rawData, {
         allowAllStreams,
         showEnded
       });

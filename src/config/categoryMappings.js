@@ -38,6 +38,18 @@ export const CATEGORY_MAPPINGS = {
     [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: ['24/7 Streams', '24/7', '247', 'Always Live'],
     [APP_CATEGORIES.TENNIS]: ['Tennis']
   },
+  pptvlegacy: {
+    [APP_CATEGORIES.BASKETBALL]: ['Basketball', 'NBA'],
+    [APP_CATEGORIES.WOMENS_BASKETBALL]: ['WNBA', 'Women\'s Basketball', 'Womens Basketball'],
+    [APP_CATEGORIES.FOOTBALL]: ['American Football', 'American Football (NFL)', 'NFL'],
+    [APP_CATEGORIES.SOCCER]: ['Football', 'Soccer'],
+    [APP_CATEGORIES.BASEBALL]: ['Baseball'],
+    [APP_CATEGORIES.HOCKEY]: ['Ice Hockey'],
+    [APP_CATEGORIES.MOTORSPORTS]: ['Motorsports'],
+    [APP_CATEGORIES.FIGHTING]: ['Wrestling', 'UFC', 'Boxing', 'MMA'],
+    [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: ['24/7 Streams', '24/7', '247', 'Always Live'],
+    [APP_CATEGORIES.TENNIS]: ['Tennis']
+  },
   sharkstreams: {
     [APP_CATEGORIES.BASKETBALL]: ['NBA'],
     [APP_CATEGORIES.WOMENS_BASKETBALL]: ['WNBA'],
@@ -55,13 +67,17 @@ export const CATEGORY_MAPPINGS = {
     [APP_CATEGORIES.FOOTBALL]: ['american-football'],
     [APP_CATEGORIES.SOCCER]: ['soccer', 'football'],
     [APP_CATEGORIES.BASEBALL]: ['baseball'],
-    [APP_CATEGORIES.HOCKEY]: ['hockey']
+    [APP_CATEGORIES.HOCKEY]: ['hockey'],
+    [APP_CATEGORIES.MOTORSPORTS]: ['motor-sports'],
+    [APP_CATEGORIES.FIGHTING]: ['fight'],
+    [APP_CATEGORIES.TENNIS]: ['tennis']
   }
 };
 
 export const PROVIDER_IDS = {
   DADDY_STREAMS: 'daddystreams',
   PPTV: 'pptv',
+  PPTV_LEGACY: 'pptvlegacy',
   SHARK_STREAMS: 'sharkstreams',
   STREAMED: 'streamed'
 };

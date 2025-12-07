@@ -79,6 +79,8 @@ export class StreamedProvider extends BaseProvider {
         return [];
       }
 
+      console.log(`Fetched ${details} streams from Streamed for source=${source}, streamId=${streamId}`);
+
       const filteredStreams = filterStreamsByLanguage(details, { allowAllStreams });
 
       if (filteredStreams.length === 0) {
@@ -93,6 +95,17 @@ export class StreamedProvider extends BaseProvider {
     } catch (error) {
       console.error('Error fetching Streamed stream details:', error);
       throw error;
+    }
+  }
+
+  async getStreamLanguage(streamId, source) {
+    try {
+      const endpoint = `${this.apiBase}/stream/${source}/${streamId}`;
+      const data = await fetchJsonWithProxy(endpoint);
+      return data[0]?.language || null;
+    } catch (error) {
+      console.warn(`Failed to fetch language for stream ${streamId}:`, error);
+      return null;
     }
   }
 
@@ -164,7 +177,7 @@ export class StreamedProvider extends BaseProvider {
     }
   }
 
-  normalizeCategories(rawData, { allowAllStreams = false, showEnded = false } = {}) {
+  async normalizeCategories(rawData, { allowAllStreams = false, showEnded = false } = {}) {
     const normalized = {
       [APP_CATEGORIES.BASKETBALL]: [],
       [APP_CATEGORIES.WOMENS_BASKETBALL]: [],
@@ -172,6 +185,9 @@ export class StreamedProvider extends BaseProvider {
       [APP_CATEGORIES.FOOTBALL]: [],
       [APP_CATEGORIES.BASEBALL]: [],
       [APP_CATEGORIES.HOCKEY]: [],
+      [APP_CATEGORIES.MOTORSPORTS]: [],
+      [APP_CATEGORIES.FIGHTING]: [],
+      [APP_CATEGORIES.TENNIS]: [],
       [APP_CATEGORIES.TWENTY_FOUR_SEVEN]: [],
       [APP_CATEGORIES.MOVIES]: []
     };
@@ -188,12 +204,15 @@ export class StreamedProvider extends BaseProvider {
       APP_CATEGORIES.SOCCER,
       APP_CATEGORIES.FOOTBALL,
       APP_CATEGORIES.BASEBALL,
-      APP_CATEGORIES.HOCKEY
+      APP_CATEGORIES.HOCKEY,
+      APP_CATEGORIES.MOTORSPORTS,
+      APP_CATEGORIES.FIGHTING,
+      APP_CATEGORIES.TENNIS
     ];
 
-    rawData.forEach((match) => {
+    for (const match of rawData) {
       if (!match || !Array.isArray(match.sources) || match.sources.length === 0) {
-        return;
+        continue;
       }
 
       const title = match.title || 'Unknown Event';
@@ -201,7 +220,7 @@ export class StreamedProvider extends BaseProvider {
 
       // FILTER RULE 1: Skip streams without "vs" in the title
       if (!hasVsKeyword) {
-        return;
+        continue;
       }
 
       const providerCategory = match.category;
@@ -226,7 +245,7 @@ export class StreamedProvider extends BaseProvider {
       }
 
       if (!appCategory) {
-        return;
+        continue;
       }
 
       if (appCategory === APP_CATEGORIES.BASKETBALL && isWomensBasketballEvent(title)) {
@@ -234,15 +253,17 @@ export class StreamedProvider extends BaseProvider {
       }
 
       // FILTER RULE 2: Skip streams with unrecognized teams
+      // Exception: Soccer/Football don't require team matching since international leagues are hard to track
+      const isSoccerOrFootball = appCategory === APP_CATEGORIES.SOCCER || appCategory === APP_CATEGORIES.FOOTBALL;
       let matchForCurrentCategory = getMatchDetailsForCategory(appCategory);
-      if (!matchForCurrentCategory || matchForCurrentCategory.matchedTeams.length === 0) {
+      if (!isSoccerOrFootball && (!matchForCurrentCategory || matchForCurrentCategory.matchedTeams.length === 0)) {
         const fallbackCategory = findFirstMatchingCategory();
         if (fallbackCategory) {
           appCategory = fallbackCategory;
           matchForCurrentCategory = getMatchDetailsForCategory(appCategory);
         } else if (!allowAllStreams) {
           // No supported team aliases detected across categories
-          return;
+          continue;
         }
       }
 
@@ -253,7 +274,7 @@ export class StreamedProvider extends BaseProvider {
       const startsAt = typeof match.date === 'number' ? Math.floor(match.date / 1000) : null;
 
       if (!showEnded && !isTimestampOnCurrentDay(startsAt)) {
-        return;
+        continue;
       }
 
       const teamMatchDetails = matchForCurrentCategory || {
@@ -261,8 +282,18 @@ export class StreamedProvider extends BaseProvider {
       };
 
       // Final validation: Ensure we have recognized teams for this matchup unless overridden
-      if (!allowAllStreams && teamMatchDetails.matchedTeams.length === 0) {
-        return;
+      // Exception: Soccer/Football are allowed even without team matches since international leagues aren't tracked
+      const isSoccerOrFootball2 = appCategory === APP_CATEGORIES.SOCCER || appCategory === APP_CATEGORIES.FOOTBALL;
+      if (!allowAllStreams && !isSoccerOrFootball2 && teamMatchDetails.matchedTeams.length === 0) {
+        continue;
+      }
+
+      // FILTER RULE 3: Check language from admin API
+      if (!allowAllStreams) {
+        const streamLanguage = await this.getStreamLanguage(match.sources[0].id, match.sources[0].source);
+        if (streamLanguage && streamLanguage.trim().toLowerCase() !== 'english') {
+          continue;
+        }
       }
 
       // Check if this is a GSW basketball game and add GSW local source
@@ -298,7 +329,7 @@ export class StreamedProvider extends BaseProvider {
       stream.hasMatchupLogos = branding.hasMatchup;
 
       normalized[appCategory].push(stream);
-    });
+    }
 
     return normalized;
   }
