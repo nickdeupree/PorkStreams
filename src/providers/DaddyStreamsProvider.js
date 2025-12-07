@@ -3,6 +3,7 @@ import { CATEGORY_MAPPINGS, APP_CATEGORIES } from '../config/categoryMappings';
 import { fetchJsonWithProxy } from '../utils/corsProxy';
 import { getTeamLogosForEvent } from '../utils/teamLogos';
 import { isTimestampOnCurrentDay } from '../utils/dateUtils';
+import { isGSWGame, getGSWLocalEmbedUrl } from '../utils/gswLocalStream';
 
 /**
  * Daddy Streams Provider Implementation
@@ -25,12 +26,29 @@ export class DaddyStreamsProvider extends BaseProvider {
     }
   }
 
-  getEmbedUrl(streamId, channelId) {
+  getEmbedUrl(streamId, channelId, stream, selectedSource = 'provider') {
+    // Check if this is a GSW basketball game
+    const isGSW = stream?.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream?.name);
+    
+    if (isGSW && selectedSource === 'gsw-local') {
+      return getGSWLocalEmbedUrl();
+    }
+    
     if (!channelId) {
       console.warn('Channel ID is required for Daddy Streams');
       return null;
     }
     return `https://dlhd.dad/embed/stream-${channelId}.php`;
+  }
+
+  getAvailableSources(stream) {
+    const isGSW = stream?.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream?.name);
+    
+    if (isGSW) {
+      return ['provider', 'gsw-local'];
+    }
+    
+    return ['provider'];
   }
 
   normalizeCategories(rawData, { showEnded = false } = {}) {
@@ -163,7 +181,8 @@ export class DaddyStreamsProvider extends BaseProvider {
               provider: 'daddystreams',
               channelId: defaultChannel.channel_id,
               streamId: event.id || eventName,
-              channels: normalizedChannels
+              channels: normalizedChannels,
+              isGSWStream: appCategory === APP_CATEGORIES.BASKETBALL && isGSWGame(eventName)
             };
 
             if (!showEnded && !isTimestampOnCurrentDay(stream.startsAt)) {

@@ -3,6 +3,7 @@ import { CATEGORY_MAPPINGS, APP_CATEGORIES } from '../config/categoryMappings';
 import { fetchJsonWithProxy } from '../utils/corsProxy';
 import { getTeamLogosForEvent, getTeamMatchDetails } from '../utils/teamLogos';
 import { isTimestampOnCurrentDay } from '../utils/dateUtils';
+import { isGSWGame, createGSWLocalSource } from '../utils/gswLocalStream';
 
 const STREAMED_BASE_URL = 'https://streamed.pk';
 
@@ -141,6 +142,15 @@ export class StreamedProvider extends BaseProvider {
 
     try {
       for (const candidate of sourceCandidates) {
+        // Handle GSW local source
+        if (candidate.source === 'gsw-local') {
+          return {
+            embedUrl: candidate.embedUrl,
+            availableStreams: [candidate],
+            source: candidate
+          };
+        }
+        
         const details = await this.getStreamDetails(candidate.source, candidate.id, {
           allowAllStreams
         });
@@ -286,6 +296,12 @@ export class StreamedProvider extends BaseProvider {
         }
       }
 
+      // Check if this is a GSW basketball game and add GSW local source
+      const isGSW = appCategory === APP_CATEGORIES.BASKETBALL && isGSWGame(title);
+      const streamSources = isGSW 
+        ? [...match.sources, createGSWLocalSource()] 
+        : match.sources;
+      
       const stream = {
         id: `streamed_${match.id}`,
         name: title,
@@ -295,14 +311,15 @@ export class StreamedProvider extends BaseProvider {
         endsAt: null,
         category: appCategory,
         provider: 'streamed',
-        sources: match.sources,
+        sources: streamSources,
         primarySource: match.sources[0],
         rawMatch: match,
         teamLogos: [],
         teamNames: [],
         leagueLogo: null,
         hasMatchupLogos: false,
-        hideSchedule: false
+        hideSchedule: false,
+        isGSWStream: isGSW
       };
 
       const branding = getTeamLogosForEvent(appCategory, title);

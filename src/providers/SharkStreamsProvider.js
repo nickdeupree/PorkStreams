@@ -3,6 +3,7 @@ import { CATEGORY_MAPPINGS, APP_CATEGORIES } from '../config/categoryMappings';
 import { fetchWithProxy } from '../utils/corsProxy';
 import { getTeamLogosForEvent } from '../utils/teamLogos';
 import { isTimestampOnCurrentDay } from '../utils/dateUtils';
+import { isGSWGame, getGSWLocalEmbedUrl } from '../utils/gswLocalStream';
 
 /**
  * SharkStreams Provider Implementation
@@ -82,12 +83,29 @@ export class SharkStreamsProvider extends BaseProvider {
     return streams;
   }
 
-  getEmbedUrl(streamId, channelId) {
+  getEmbedUrl(streamId, channelId, stream, selectedSource = 'provider') {
+    // Check if this is a GSW basketball game
+    const isGSW = stream?.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream?.name);
+    
+    if (isGSW && selectedSource === 'gsw-local') {
+      return getGSWLocalEmbedUrl();
+    }
+    
     if (!channelId) {
       console.warn('Channel ID is required for SharkStreams');
       return null;
     }
     return `https://sharkstreams.net/player.php?channel=${channelId}`;
+  }
+
+  getAvailableSources(stream) {
+    const isGSW = stream?.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream?.name);
+    
+    if (isGSW) {
+      return ['provider', 'gsw-local'];
+    }
+    
+    return ['provider'];
   }
 
   /**
@@ -165,7 +183,8 @@ export class SharkStreamsProvider extends BaseProvider {
           provider: 'sharkstreams',
           channelId: event.channelId,
           streamId: event.channelId,
-          embedUrl: event.embedUrl
+          embedUrl: event.embedUrl,
+          isGSWStream: appCategory === APP_CATEGORIES.BASKETBALL && isGSWGame(event.name)
         };
 
         if (!showEnded && !isTimestampOnCurrentDay(stream.startsAt)) {

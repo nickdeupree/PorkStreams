@@ -2,6 +2,7 @@ import { BaseProvider } from './BaseProvider';
 import { CATEGORY_MAPPINGS, APP_CATEGORIES } from '../config/categoryMappings';
 import { fetchJsonWithProxy } from '../utils/corsProxy';
 import { isTimestampOnCurrentDay } from '../utils/dateUtils';
+import { isGSWGame, getGSWLocalEmbedUrl } from '../utils/gswLocalStream';
 
 const EXCLUDED_24_7_STREAM_NAMES = new Set([
   '24/7 cows',
@@ -32,7 +33,14 @@ export class PPTVProvider extends BaseProvider {
     }
   }
 
-  getEmbedUrl(stream) {
+  getEmbedUrl(stream, selectedSource = 'provider') {
+    // Check if this is a GSW basketball game
+    const isGSW = stream.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream.name);
+    
+    if (isGSW && selectedSource === 'gsw-local') {
+      return getGSWLocalEmbedUrl();
+    }
+    
     // Use iframe field if present, otherwise construct from uri_name
     if (stream.iframe) {
       return stream.iframe;
@@ -45,6 +53,16 @@ export class PPTVProvider extends BaseProvider {
 
     console.warn('No embed URL available for stream:', stream);
     return null;
+  }
+
+  getAvailableSources(stream) {
+    const isGSW = stream.category === APP_CATEGORIES.BASKETBALL && isGSWGame(stream.name);
+    
+    if (isGSW) {
+      return ['provider', 'gsw-local'];
+    }
+    
+    return ['provider'];
   }
 
   normalizeCategories(rawData, { showEnded = false } = {}) {
@@ -97,9 +115,10 @@ export class PPTVProvider extends BaseProvider {
 
         if (appCategory && Array.isArray(categoryObj.streams)) {
           categoryObj.streams.forEach((stream) => {
+            const streamName = stream.name || 'Unknown Event';
             const normalizedStream = {
               id: stream.id,
-              name: stream.name || 'Unknown Event',
+              name: streamName,
               tag: stream.tag || 'PPTV',
               poster: stream.poster || '',
               startsAt: parseTimestamp(stream.starts_at),
@@ -110,6 +129,7 @@ export class PPTVProvider extends BaseProvider {
               uri_name: stream.uri_name,
               always_live: stream.always_live === 1,
               allowpaststreams: stream.allowpaststreams === 1,
+              isGSWStream: appCategory === APP_CATEGORIES.BASKETBALL && isGSWGame(streamName),
               rawStream: stream // Keep raw data for embed URL construction
             };
 
