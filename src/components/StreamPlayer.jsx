@@ -20,6 +20,7 @@ import { PROVIDER_IDS } from '../config/categoryMappings';
 import { DaddyStreamsProvider } from '../providers/DaddyStreamsProvider';
 import { PPTVProvider } from '../providers/PPTVProvider';
 import { StreamedProvider } from '../providers/StreamedProvider';
+import { SharkStreamsProvider } from '../providers/SharkStreamsProvider';
 import { MOVIE_PROVIDER_ID, buildVidkingEmbedUrl } from '../services/movieService';
 import { saveMovieProgress, saveTvProgress } from '../services/watchProgressService';
 
@@ -96,6 +97,8 @@ const StreamPlayer = () => {
 
   const [selectedChannelId, setSelectedChannelId] = useState(null);
   const [availableChannels, setAvailableChannels] = useState([]);
+  const [selectedSource, setSelectedSource] = useState('provider');
+  const [availableSources, setAvailableSources] = useState([]);
 
   // Add listener for player progress messages
   useEffect(() => {
@@ -148,6 +151,7 @@ const StreamPlayer = () => {
       return;
     }
 
+    // Handle channel selection for Daddy Streams
     if (currentStream.provider === PROVIDER_IDS.DADDY_STREAMS) {
       const channels = Array.isArray(currentStream.channels)
         ? currentStream.channels
@@ -165,6 +169,24 @@ const StreamPlayer = () => {
     } else {
       setAvailableChannels([]);
       setSelectedChannelId(null);
+    }
+
+    // Handle source selection for GSW streams
+    if (currentStream.isGSWStream) {
+      if (currentStream.provider === PROVIDER_IDS.STREAMED) {
+        // For Streamed, sources are already in the stream object
+        const sources = currentStream.sources || [];
+        setAvailableSources(sources);
+        // Set the primary source (not GSW local) as default
+        setSelectedSource(currentStream.primarySource || sources[0] || null);
+      } else {
+        // For other providers, use provider and gsw-local
+        setAvailableSources(['provider', 'gsw-local']);
+        setSelectedSource('provider');
+      }
+    } else {
+      setAvailableSources([]);
+      setSelectedSource('provider');
     }
   }, [currentStream]);
 
@@ -201,16 +223,18 @@ const StreamPlayer = () => {
           }
 
           const providerInstance = new DaddyStreamsProvider();
-          url = await providerInstance.getEmbedUrl(currentStream.streamId, channelId);
+          url = await providerInstance.getEmbedUrl(currentStream.streamId, channelId, currentStream, selectedSource);
         } else if (currentStream.provider === PROVIDER_IDS.PPTV) {
           const providerInstance = new PPTVProvider();
-          url = await providerInstance.getEmbedUrl(currentStream);
+          url = await providerInstance.getEmbedUrl(currentStream, selectedSource);
         } else if (currentStream.provider === PROVIDER_IDS.SHARK_STREAMS) {
-          url = currentStream.embedUrl;
+          const providerInstance = new SharkStreamsProvider();
+          url = providerInstance.getEmbedUrl(currentStream.streamId, currentStream.channelId, currentStream, selectedSource);
         } else if (currentStream.provider === PROVIDER_IDS.STREAMED) {
           const providerInstance = new StreamedProvider();
           const result = await providerInstance.getEmbedUrl(currentStream, {
-            allowAllStreams
+            allowAllStreams,
+            sourceOverride: selectedSource && typeof selectedSource === 'object' ? selectedSource : undefined
           });
           url = result?.embedUrl || null;
         } else if (currentStream.provider === MOVIE_PROVIDER_ID) {
@@ -252,12 +276,14 @@ const StreamPlayer = () => {
     return () => {
       isActive = false;
     };
-  }, [currentStream, selectedChannelId, availableChannels]);
+  }, [currentStream, selectedChannelId, availableChannels, selectedSource]);
 
   const handleClose = () => {
     setCurrentStream(null);
     setSelectedChannelId(null);
     setAvailableChannels([]);
+    setSelectedSource('provider');
+    setAvailableSources([]);
     // Dispatch event to notify other components that player closed
     document.dispatchEvent(new CustomEvent('streamPlayerClosed'));
   };
@@ -266,9 +292,26 @@ const StreamPlayer = () => {
     setSelectedChannelId(event.target.value);
   };
 
+  const handleSourceChange = (event) => {
+    const value = event.target.value;
+    
+    if (currentStream.provider === PROVIDER_IDS.STREAMED) {
+      // For Streamed provider, find the source object
+      const source = currentStream.sources?.find(s => 
+        s.source === value || (typeof s === 'object' && JSON.stringify(s) === value)
+      );
+      setSelectedSource(source || value);
+    } else {
+      // For other providers, use the string value
+      setSelectedSource(value);
+    }
+  };
+
   const showChannelSelector =
     currentStream?.provider === PROVIDER_IDS.DADDY_STREAMS &&
     availableChannels.length > 1;
+  
+  const showSourceSelector = currentStream?.isGSWStream && availableSources.length > 1;
 
   // current selected channel will be derived inline where needed
 
@@ -353,8 +396,54 @@ const StreamPlayer = () => {
             </IconButton>
           </Box>
           
+          {showSourceSelector && (
+            <FormControl size="small" sx={{ minWidth: 150, ml: 1 }}>
+              <InputLabel sx={{ color: 'white' }}>Source</InputLabel>
+              <Select
+                value={
+                  currentStream.provider === PROVIDER_IDS.STREAMED
+                    ? selectedSource?.source || (typeof selectedSource === 'object' ? JSON.stringify(selectedSource) : selectedSource)
+                    : selectedSource
+                }
+                label="Source"
+                onChange={handleSourceChange}
+                sx={{
+                  color: 'white',
+                  '.MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.8)',
+                  },
+                  '.MuiSvgIcon-root': {
+                    color: 'white',
+                  }
+                }}
+              >
+                {currentStream.provider === PROVIDER_IDS.STREAMED ? (
+                  // For Streamed provider, show all sources
+                  availableSources.map((source, idx) => (
+                    <MenuItem
+                      key={`${source.source}-${source.id}-${idx}`}
+                      value={source.source || JSON.stringify(source)}
+                    >
+                      {source.source === 'gsw-local' ? 'GSW Local' : source.source || `Source ${idx + 1}`}
+                    </MenuItem>
+                  ))
+                ) : (
+                  // For other providers, show simple source names
+                  availableSources.map((source) => (
+                    <MenuItem key={source} value={source}>
+                      {source === 'provider' ? currentStream.provider.toUpperCase() : 'GSW Local'}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
+          )}
+
           {showChannelSelector && (
-            <FormControl size="small" sx={{ minWidth: 150 }}>
+            <FormControl size="small" sx={{ minWidth: 150, ml: 1 }}>
               <InputLabel sx={{ color: 'white' }}>Channel</InputLabel>
               <Select
                 value={selectedChannelId || ''}
