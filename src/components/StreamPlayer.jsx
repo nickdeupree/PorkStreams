@@ -22,6 +22,7 @@ import { PPTVProvider } from '../providers/PPTVProvider';
 import { StreamedProvider } from '../providers/StreamedProvider';
 import { MOVIE_PROVIDER_ID, buildVidkingEmbedUrl } from '../services/movieService';
 import { saveMovieProgress, saveTvProgress } from '../services/watchProgressService';
+import { PPTVLegacyProvider } from '../providers/PPTVLegacyProvider';
 
 const StreamPlayer = () => {
   const { currentStream, setCurrentStream, allowAllStreams } = useAppContext();
@@ -205,12 +206,16 @@ const StreamPlayer = () => {
         } else if (currentStream.provider === PROVIDER_IDS.PPTV) {
           const providerInstance = new PPTVProvider();
           url = await providerInstance.getEmbedUrl(currentStream);
+        } else if (currentStream.provider === PROVIDER_IDS.PPTV_LEGACY) {
+          const providerInstance = new PPTVLegacyProvider();
+          url = await providerInstance.getEmbedUrl(currentStream);
         } else if (currentStream.provider === PROVIDER_IDS.SHARK_STREAMS) {
           url = currentStream.embedUrl;
         } else if (currentStream.provider === PROVIDER_IDS.STREAMED) {
           const providerInstance = new StreamedProvider();
           const result = await providerInstance.getEmbedUrl(currentStream, {
-            allowAllStreams
+            allowAllStreams,
+            sourceOverride: currentStream.selectedSource
           });
           url = result?.embedUrl || null;
         } else if (currentStream.provider === MOVIE_PROVIDER_ID) {

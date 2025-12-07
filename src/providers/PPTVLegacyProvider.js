@@ -9,25 +9,25 @@ const EXCLUDED_24_7_STREAM_NAMES = new Set([
 ]);
 
 /**
- * PPTV Provider Implementation
+ * PPTV Legacy Provider Implementation (old.ppv.to)
  */
-export class PPTVProvider extends BaseProvider {
+export class PPTVLegacyProvider extends BaseProvider {
   constructor() {
-    super('pptv');
+    super('pptvlegacy');
     // Use proxy in development, direct URL in production
     this.apiUrl = import.meta.env.DEV
-      ? '/api/pptv/streams'
-      : 'https://api.ppvs.su/api/streams';
+      ? '/api/pptvlegacy/streams'
+      : 'https://old.ppv.to/api/streams';
   }
 
   async fetchSchedule() {
     try {
       // Try Vite proxy first (in dev), then CORS proxies
-      console.log('Fetching PPTV data from:', this.apiUrl);
+      console.log('Fetching PPTV Legacy data from:', this.apiUrl);
       const data = await fetchJsonWithProxy(this.apiUrl);
       return data;
     } catch (error) {
-      console.error('Error fetching PPTV schedule:', error);
+      console.error('Error fetching PPTV Legacy schedule:', error);
       throw error;
     }
   }
@@ -40,7 +40,7 @@ export class PPTVProvider extends BaseProvider {
     
     if (stream.uri_name) {
       // Construct URL from uri_name if needed
-      return `https://api.ppvs.su/api/streams/${stream.uri_name}`;
+      return `https://old.ppv.to/api/streams/${stream.uri_name}`;
     }
 
     console.warn('No embed URL available for stream:', stream);
@@ -67,7 +67,7 @@ export class PPTVProvider extends BaseProvider {
         return normalized;
       }
 
-      const mappings = CATEGORY_MAPPINGS.pptv;
+      const mappings = CATEGORY_MAPPINGS.pptvlegacy;
 
       const parseTimestamp = (value) => {
         if (!value) {
@@ -100,12 +100,12 @@ export class PPTVProvider extends BaseProvider {
             const normalizedStream = {
               id: stream.id,
               name: stream.name || 'Unknown Event',
-              tag: stream.tag || 'PPTV',
+              tag: stream.tag || 'PPTV Legacy',
               poster: stream.poster || '',
               startsAt: parseTimestamp(stream.starts_at),
               endsAt: parseTimestamp(stream.ends_at),
               category: appCategory,
-              provider: 'pptv',
+              provider: 'pptvlegacy',
               iframe: stream.iframe,
               uri_name: stream.uri_name,
               always_live: stream.always_live === 1,
@@ -136,7 +136,7 @@ export class PPTVProvider extends BaseProvider {
 
       return normalized;
     } catch (error) {
-      console.error('Error normalizing PPTV data:', error);
+      console.error('Error normalizing PPTV Legacy data:', error);
       return normalized;
     }
   }

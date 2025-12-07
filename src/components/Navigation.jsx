@@ -209,6 +209,9 @@ const Navigation = () => {
                   <MenuItem value={PROVIDER_IDS.PPTV}>
                     PPTV
                   </MenuItem>
+                  <MenuItem value={PROVIDER_IDS.PPTV_LEGACY}>
+                    PPTV (Legacy)
+                  </MenuItem>
                   <MenuItem value={PROVIDER_IDS.STREAMED}>
                     Streamed
                   </MenuItem>
